@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Code\new\PythonProjects\rm2026\radar\ctypes\Livox\mycode\livox_python_interface\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Code\new\PythonProjects\rm2026\radar\ctypes\Livox\mycode\livox_python_interface\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4A64EAAB-9F43-3E74-96D1-CB4B5F643A1F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

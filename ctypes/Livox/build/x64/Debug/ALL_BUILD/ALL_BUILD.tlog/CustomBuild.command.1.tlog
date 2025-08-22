@@ -1,0 +1,10 @@
+^D:\CODE\NEW\PYTHONPROJECTS\RM2026\RADAR\CTYPES\LIVOX\CMAKELISTS.TXT
+setlocal
+D:\Software\cmake-4.1.0-windows-x86_64\bin\cmake.exe -SD:/Code/new/PythonProjects/rm2026/radar/ctypes/Livox -BD:/Code/new/PythonProjects/rm2026/radar/ctypes/Livox/build --check-stamp-file D:/Code/new/PythonProjects/rm2026/radar/ctypes/Livox/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

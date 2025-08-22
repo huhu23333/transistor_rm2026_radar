@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "livox_sdk.h": "c"
+    }
+}

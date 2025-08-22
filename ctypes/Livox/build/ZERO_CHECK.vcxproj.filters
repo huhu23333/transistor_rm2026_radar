@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Code\new\PythonProjects\rm2026\radar\ctypes\Livox\build\CMakeFiles\683bd828a1fe304edc9525c8560d0edd\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{61A4C851-EC6C-317E-A07B-9FA62936489A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
