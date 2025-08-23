@@ -22,9 +22,9 @@ class PYIF_PonitData(ctypes.Structure):
 
 class LivoxInterface:
     def __init__(self):
-        self.integrate_time = 300 # ms
+        self.integrate_time = 1000 # ms
         self.PYIF_PonitDataArrayLen = 4096
-        self.image2dSize = 640
+        self.image2dSize = 1024
         self.integrateTemp = []
         self.integrateTempTimes = []
         self.integrateResult = np.zeros((0, 5))
@@ -61,6 +61,8 @@ class LivoxInterface:
         self.py_readTo = 0
         self.py_readCount = 0
         self.py_updatingResult = False
+        self.image2dResult = [np.zeros((self.image2dSize, self.image2dSize, 3), dtype=np.uint8),
+                              np.zeros((self.image2dSize, self.image2dSize, 1), dtype=np.uint8)]
 
     def pyif_Init(self):
         result = self.lib.pyif_Init()
@@ -171,6 +173,8 @@ class LivoxInterface:
         
         image = bgr_image
         #image = cv2.inpaint(image, 255-mask, 0, cv2.INPAINT_TELEA) # cv2.INPAINT_NS
+
+        self.image2dResult = [image, mask]
         return image
 
     def visualizeNowReslut3d(self):
@@ -190,6 +194,7 @@ class LivoxInterface:
         #self.endUpdatingThread()
         #self.visualizeNowReslut3d()
         while True:
-            cv2.imshow("", self.draw2dImage())
+            cv2.imshow("Livox test", self.draw2dImage())
             print(f"{self.py_readCount} | {self.pyif_writeCount.value} | {len(self.integrateResult)}")
-            cv2.waitKey(1)
+            if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
+                break
