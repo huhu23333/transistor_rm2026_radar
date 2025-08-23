@@ -1,12 +1,19 @@
 import ctypes
 import numpy as np
-import os
+import os, sys
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import threading
 import time
 import cv2
+
+sys.path.append(os.path.dirname(__file__))
+from MvImport.CameraParams_header import MV_CC_DEVICE_INFO_LIST, MV_CC_DEVICE_INFO, MV_FRAME_OUT_INFO_EX, MV_CC_DEVICE_INFO_LIST
+from MvImport.CameraParams_const import MV_USB_DEVICE, MV_ACCESS_Exclusive
+from MvImport.MvCameraControl_class import MvCamera
+from MvImport.PixelType_header import PixelType_Gvsp_Mono8, PixelType_Gvsp_BGR8_Packed, PixelType_Gvsp_YUV422_Packed, PixelType_Gvsp_RGB8_Packed, PixelType_Gvsp_BayerRG8
+
 
 class PYIF_PonitData(ctypes.Structure):
     _fields_ = [
@@ -191,11 +198,111 @@ class LivoxCtypesReader:
             print(f"{self.py_readCount} | {self.pyif_writeCount.value} | {len(self.integrateResult)}")
             cv2.waitKey(1)
 
+
+class Camera:
+    def __init__(self, camera_index=0):
+        self._deviceList = MV_CC_DEVICE_INFO_LIST()
+        self._tlayerType = MV_USB_DEVICE
+        self._cam = MvCamera()
+        self._camera_index = camera_index
+        self._width = 4024
+        self._height = 3036
+
+        # 枚举设备
+        ret = MvCamera.MV_CC_EnumDevices(self._tlayerType, self._deviceList)
+        if ret != 0 or self._deviceList.nDeviceNum == 0:
+            print("未找到设备！")
+            sys.exit()
+
+        # 创建句柄并打开设备
+        stDeviceList = ctypes.cast(self._deviceList.pDeviceInfo[camera_index], ctypes.POINTER(MV_CC_DEVICE_INFO)).contents
+        ret = self._cam.MV_CC_CreateHandle(stDeviceList)
+        if ret != 0:
+            print(f"创建句柄失败，错误码: {ret}")
+            sys.exit()
+
+        ret = self._cam.MV_CC_OpenDevice(MV_ACCESS_Exclusive, 0)
+        if ret != 0:
+            print(f"打开设备失败，错误码: {ret}")
+            sys.exit()
+            
+    def set_exposure_time(self, exposure_time):
+        """设置曝光时间（微秒）"""
+        ret = self._cam.MV_CC_SetFloatValue("ExposureTime", exposure_time)
+        if ret != 0:
+            print(f"设置曝光时间失败，错误码: {ret}")
+        else:
+            print(f"曝光时间已设置为: {exposure_time} 微秒")
+
+    def set_gain(self, gain):
+        """设置增益（dB）"""
+        ret = self._cam.MV_CC_SetFloatValue("Gain", gain)
+        if ret != 0:
+            print(f"设置增益失败，错误码: {ret}")
+        else:
+            print(f"增益已设置为: {gain} dB")
+
+    def start_grabbing(self):
+        # 开始取流
+        ret = self._cam.MV_CC_StartGrabbing()
+        if ret != 0:
+            print(f"开始取流失败，错误码: {ret}")
+            sys.exit()
+
+    def get_image(self):
+        # 获取一帧图像数据
+        stFrameInfo = MV_FRAME_OUT_INFO_EX()
+        
+        # Bayer格式每个像素占1字节
+        buffer_size = self._width * self._height
+        data_buf = (ctypes.c_ubyte * buffer_size)()
+
+        ret = self._cam.MV_CC_GetOneFrameTimeout(ctypes.byref(data_buf), buffer_size, stFrameInfo, 1000)
+        if ret == 0:
+            # Bayer格式数据，需要转换为RGB
+            bayer_data = np.frombuffer(data_buf, dtype=np.uint8).reshape((self._height, self._width))
+            
+            # 将BayerRG8转换为BGR（OpenCV默认格式）
+            # 注意：这里使用的是RG Bayer模式，请根据实际相机传感器类型调整
+            img_bgr = cv2.cvtColor(bayer_data, cv2.COLOR_BayerBG2BGR)
+            
+            return img_bgr
+        else:
+            print(f"获取图像失败，错误码: {ret}")
+            return None
+
+    def stop_grabbing(self):
+        # 停止取流并关闭设备
+        self._cam.MV_CC_StopGrabbing()
+        self._cam.MV_CC_CloseDevice()
+
+
+
 def main():
-    livoxReader = LivoxCtypesReader()
+    """ livoxReader = LivoxCtypesReader()
     livoxReader.pyif_Init()
     livoxReader.test()
-    livoxReader.pyif_Uninit()
+    livoxReader.pyif_Uninit() """
+
+    camera = Camera(camera_index=0)
+    
+    # 设置相机参数
+    camera.set_exposure_time(10000)  # 设置曝光时间为10000微秒
+    camera.set_gain(10.0)  # 设置增益为10dB
+    
+    camera.start_grabbing()
+    while True:
+        img = camera.get_image()
+        if img is not None:
+            img = cv2.resize(img, (1006, 759))
+            cv2.imshow("Camera", img)
+
+        if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
+            break
+    camera.stop_grabbing()
+    cv2.destroyAllWindows()
+
+    
 
 if __name__ == "__main__":
     main()
