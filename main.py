@@ -6,6 +6,8 @@ import threading
 import numpy as np
 import math
 import cv2
+import time
+import random
 
 """ 内参矩阵 K:
  [[3.24060091e+03 0.00000000e+00 2.03544211e+03]
@@ -42,13 +44,20 @@ def radToPix(yaw_rad, pitch_rad):
     u, v = pixel_coords[0][0]
     return u, v
 
-rad_bais = np.array([0.013, 0.026]) # 增加值将摄像机图像左移、下移
+rad_bais = [0.010, 0.026] # 增加值将摄像机图像左移、下移
+def newPixToRad(u, v, image_size = (1024, 1024)):
+    return (u/image_size[0]-0.5)*1.2287117934040082+rad_bais[0], -(v/image_size[0]-0.5)*1.2287117934040082+rad_bais[1]
+
+def radToNewPix(yaw_rad, pitch_rad, image_size = (1024, 1024), toInt = False):
+    result = ((yaw_rad-rad_bais[0])/1.2287117934040082+0.5)*image_size[0], (-(pitch_rad-rad_bais[1])/1.2287117934040082+0.5)*image_size[1]
+    return (int(result[0]), int(result[1])) if toInt else result
+
 map_x = np.zeros((1024, 1024), dtype=np.float32)
 map_y = np.zeros((1024, 1024), dtype=np.float32)
 print("!!!")
 for y in range(1024):
     for x in range(1024):
-        x_origin, y_origin = radToPix((x/1024-0.5)*1.2287117934040082+rad_bais[0], -(y/1024-0.5)*1.2287117934040082+rad_bais[1])
+        x_origin, y_origin = radToPix(*newPixToRad(x, y))
         map_x[y, x] = x_origin
         map_y[y, x] = y_origin
     print(x_origin, y_origin)
@@ -56,6 +65,38 @@ for y in range(1024):
 def mapToRad(image):
     mapped_img = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR)
     return mapped_img
+
+
+
+def debug_util_center_to_vertexes(center):
+    half_side_len = 100
+    pts = np.array([
+        [center[0]-half_side_len, center[1]-half_side_len],
+        [center[0]-half_side_len, center[1]],
+        [center[0]-half_side_len, center[1]+half_side_len],
+        [center[0], center[1]+half_side_len],
+        [center[0]+half_side_len, center[1]+half_side_len],
+        [center[0]+half_side_len, center[1]],
+        [center[0]+half_side_len, center[1]-half_side_len],
+        [center[0], center[1]-half_side_len]
+    ], dtype=np.int32)
+    return pts
+
+
+t_last_rand = time.time()
+rand_posi = [random.randint(50,3974), random.randint(50,2986)]
+def debug_rand_octagon(img1, img2, livoxInterface):
+    global t_last_rand, rand_posi
+    if time.time() - t_last_rand > 10:
+        t_last_rand = time.time()
+        rand_posi = [random.randint(50,3974), random.randint(50,2986)]
+    pts = debug_util_center_to_vertexes(rand_posi)
+    cv2.polylines(img1, [pts.reshape((-1, 1, 2))], isClosed=True, color=(0, 255, 0), thickness=5)
+    new_pts = np.array([radToNewPix(*pixToRad(pt[0], pt[1])) for pt in pts], dtype=np.int32)
+    cv2.polylines(img2, [new_pts.reshape((-1, 1, 2))], isClosed=True, color=(0, 255, 0), thickness=3)
+
+    points_in_range = livoxInterface.get_points_in_range(pixToRad(*rand_posi), 0.03)
+    print(np.median(points_in_range[:,2]))
 
 def main():
     livoxInterface = LivoxInterface()
@@ -72,13 +113,18 @@ def main():
     camera.set_gain(10.0)  # 设置增益为10dB
     
     camera.start_grabbing()
+
     while True:
+
         img = camera.get_image()
         if img is not None:
             img_radar = livoxInterface.image2dResult[0]
             img_radar_mask = livoxInterface.image2dResult[1]
             img_mapToRad = cv2.resize(mapToRad(img), (1024, 1024))
             cv2.copyTo(img_radar, img_radar_mask, img_mapToRad)
+
+            debug_rand_octagon(img, img_mapToRad, livoxInterface)
+
             img = cv2.resize(img, (1006, 759))
             cv2.imshow("Camera", img)
             cv2.imshow("Camera mapToRad", img_mapToRad)
