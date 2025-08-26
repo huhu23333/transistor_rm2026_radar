@@ -23,10 +23,10 @@ def main():
     camera = Camera(camera_index=0)
     # 设置相机参数
     camera.set_exposure_time(10000)  # 设置曝光时间为10000微秒
-    camera.set_gain(10.0)  # 设置增益为10dB
+    camera.set_gain(16.0)  # 设置增益为10dB
     camera.start_grabbing()
 
-    model_path = "yolo11n.pt"
+    model_path = "best.pt"
     conf_threshold = 0.5
     model = YOLO(model_path)
 

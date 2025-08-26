@@ -111,8 +111,8 @@ class LivoxInterface:
     
     def xyzToYawPitchR(self, xs, ys, zs, others=[]):
         rs = np.sqrt(np.square(xs) + np.square(ys) + np.square(zs))
-        yaws = np.atan2(-ys, xs)
-        pitchs = np.asin(zs / rs)
+        yaws = np.arctan2(-ys, xs)
+        pitchs = np.arcsin(zs / rs)
         results = np.column_stack([yaws, pitchs, rs, *others]).reshape(-1, 3+len(others))
         return results
 
