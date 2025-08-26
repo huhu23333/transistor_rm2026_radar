@@ -22,9 +22,10 @@ class PYIF_PonitData(ctypes.Structure):
 
 class LivoxInterface:
     def __init__(self):
-        self.integrate_time = 1000 # ms
+        self.integrate_time = 300 # ms （桑佰毫秒，够吗？应该够吧。来吧，试下米↓↑）
         self.PYIF_PonitDataArrayLen = 4096
         self.image2dSize = 1024
+        self.position_bias = (0, 0, 0)
         self.integrateTemp = []
         self.integrateTempTimes = []
         self.integrateResult = np.zeros((0, 5))
@@ -118,11 +119,19 @@ class LivoxInterface:
     def updatingThreadFunc(self):
         while self.py_updatingResult:
             if self.py_readTo == 0:
-                self.integrateTemp.append(self.extractXYZRT(self.readArray0()))
+                xyzrt = self.extractXYZRT(self.readArray0())
+                xyzrt[:,0] += self.position_bias[0]
+                xyzrt[:,1] += self.position_bias[1]
+                xyzrt[:,2] += self.position_bias[2]
+                self.integrateTemp.append(xyzrt)
                 self.integrateTempTimes.append(time.time())
                 self.py_readTo = 1
             elif self.py_readTo == 1:
-                self.integrateTemp.append(self.extractXYZRT(self.readArray1()))
+                xyzrt = self.extractXYZRT(self.readArray1())
+                xyzrt[:,0] += self.position_bias[0]
+                xyzrt[:,1] += self.position_bias[1]
+                xyzrt[:,2] += self.position_bias[2]
+                self.integrateTemp.append(xyzrt)
                 self.integrateTempTimes.append(time.time())
                 self.py_readTo = 0
             while (len(self.integrateTempTimes) > 0) and ((time.time() - self.integrateTempTimes[0]) * 1000 > self.integrate_time):
@@ -139,7 +148,53 @@ class LivoxInterface:
 
     def endUpdatingThread(self):
         self.py_updatingResult = False
+
+    def get_nearest_points(self, rad_center, number, return_valve = "ypr"):
+        integrateResult_temp = self.integrateResult.copy()
+        integrateResult_rad_temp = self.integrateResult_rad.copy()
+        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
+        if temp_size == 0:
+            return np.zeros((number,5))
+        integrateResult_temp = integrateResult_temp[:temp_size]
+        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
+        return_size = min(temp_size, number)
+        min_distance_indexes = np.argsort(np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0]) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])))[:return_size]
+        if return_valve == "ypr":
+            return integrateResult_rad_temp[min_distance_indexes]
+        else:
+            return integrateResult_temp[min_distance_indexes]
+
+    def get_points_in_range(self, rad_center, distance, method = "L1", return_valve = "ypr"): # L1 L2 L-infinity
+        integrateResult_temp = self.integrateResult.copy()
+        integrateResult_rad_temp = self.integrateResult_rad.copy()
+        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
+        if temp_size == 0:
+            return self.get_nearest_points(rad_center, 100, return_valve)
+        integrateResult_temp = integrateResult_temp[:temp_size]
+        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
+        if method == "L1":
+            mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) + np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance
+            if not np.any(mask):
+                return self.get_nearest_points(rad_center, 100, return_valve)
+            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+        elif method == "L2":
+            mask = np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0]) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])) <= distance
+            if not np.any(mask):
+                return self.get_nearest_points(rad_center, 100, return_valve)
+            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+        elif method == "L-infinity":
+            mask = np.logical_and(np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) <= distance , np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance)
+            if not np.any(mask):
+                return self.get_nearest_points(rad_center, 100, return_valve)
+            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+        else: # 默认使用L1距离
+            mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) + np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance
+            if not np.any(mask):
+                return self.get_nearest_points(rad_center, 100, return_valve)
+            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
     
+    # -------------------------以下为测试代码---------------------------------
+
     def draw2dImage(self):
         image = np.zeros((self.image2dSize, self.image2dSize, 1), dtype=np.uint8)
         fimages, mask = self.pyif_draw2dImageF(self.integrateResult_rad[:,0], self.integrateResult_rad[:,1], 
@@ -199,47 +254,3 @@ class LivoxInterface:
             #print(f"{self.py_readCount} | {self.pyif_writeCount.value} | {len(self.integrateResult)}")
             if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
                 break
-
-    def get_nearest_points(self, rad_center, number, return_valve = "ypr"):
-        integrateResult_temp = self.integrateResult.copy()
-        integrateResult_rad_temp = self.integrateResult_rad.copy()
-        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
-        if temp_size == 0:
-            return np.zeros((number,5))
-        integrateResult_temp = integrateResult_temp[:temp_size]
-        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
-        return_size = min(temp_size, number)
-        min_distance_indexes = np.argsort(np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0]) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])))[:return_size]
-        if return_valve == "ypr":
-            return integrateResult_rad_temp[min_distance_indexes]
-        else:
-            return integrateResult_temp[min_distance_indexes]
-
-    def get_points_in_range(self, rad_center, distance, method = "L1", return_valve = "ypr"): # L1 L2 L-infinity
-        integrateResult_temp = self.integrateResult.copy()
-        integrateResult_rad_temp = self.integrateResult_rad.copy()
-        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
-        if temp_size == 0:
-            return self.get_nearest_points(rad_center, 100, return_valve)
-        integrateResult_temp = integrateResult_temp[:temp_size]
-        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
-        if method == "L1":
-            mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) + np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance
-            if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
-        elif method == "L2":
-            mask = np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0]) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])) <= distance
-            if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
-        elif method == "L-infinity":
-            mask = np.logical_and(np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) <= distance , np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance)
-            if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
-        else: # 默认使用L1距离
-            mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) + np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= distance
-            if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
