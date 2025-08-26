@@ -40,18 +40,18 @@ def radToPix(yaw_rad, pitch_rad):
     pixel_coords = cv2.projectPoints(norm_coords, np.zeros(3), np.zeros(3), K, D)[0]
     # 获取像素坐标 (u, v)
     u, v = pixel_coords[0][0]
-    return u, v
+    return np.array([u, v])
 
 rad_bais = [0.006, 0.023] # 增加值将摄像机图像左移、下移
 def newPixToRad(u, v, image_size = (1024, 1024)):
-    return (u/image_size[0]-0.5)*1.2287117934040082+rad_bais[0], -(v/image_size[0]-0.5)*1.2287117934040082+rad_bais[1]
+    return np.array([(u/image_size[0]-0.5)*1.2287117934040082+rad_bais[0], -(v/image_size[0]-0.5)*1.2287117934040082+rad_bais[1]])
 
-def radToNewPix(yaw_rad, pitch_rad, image_size = (1024, 1024), toInt = False):
-    result = ((yaw_rad-rad_bais[0])/1.2287117934040082+0.5)*image_size[0], (-(pitch_rad-rad_bais[1])/1.2287117934040082+0.5)*image_size[1]
-    return (int(result[0]), int(result[1])) if toInt else result
+def radToNewPix(yaw_rad, pitch_rad, image_size = (1024, 1024)):
+    result = np.array([((yaw_rad-rad_bais[0])/1.2287117934040082+0.5)*image_size[0], (-(pitch_rad-rad_bais[1])/1.2287117934040082+0.5)*image_size[1]])
+    return result
 
 if debug:
-    map_x = np.zeros((1024, 1024), dtype=np.float32)
+    """ map_x = np.zeros((1024, 1024), dtype=np.float32)
     map_y = np.zeros((1024, 1024), dtype=np.float32)
     print("!!!")
     for y in range(1024):
@@ -60,6 +60,10 @@ if debug:
             map_x[y, x] = x_origin
             map_y[y, x] = y_origin
         print(x_origin, y_origin)
+    np.save("map_x", map_x)
+    np.save("map_y", map_y) """
+    map_x = np.load("map_x.npy")
+    map_y = np.load("map_y.npy")
 
     def mapToRad(image):
         mapped_img = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR)
@@ -91,5 +95,42 @@ if debug:
         new_pts = np.array([radToNewPix(*pixToRad(pt[0], pt[1])) for pt in pts], dtype=np.int32)
         cv2.polylines(img2, [new_pts.reshape((-1, 1, 2))], isClosed=True, color=(0, 255, 0), thickness=3)
 
-        points_in_range = livoxInterface.get_points_in_range(pixToRad(*rand_posi), 0.03)
+        points_in_range = livoxInterface.get_points_in_range(pixToRad(*rand_posi), 0.03, 0.03)
         print(np.median(points_in_range[:,2]))
+
+    def debug_yolo_to_distance(img1, img2, livoxInterface, boxes):
+        for box in boxes:
+            center = box.xywh[0,:2]
+            half_w = box.xywh[0,2]/2
+            half_h = box.xywh[0,3]/2
+            pts = np.array([ # ← ↓ → ↑
+                [center[0]-half_w, center[1]],
+                [center[0], center[1]+half_h],
+                [center[0]+half_w, center[1]],
+                [center[0], center[1]-half_h]
+            ], dtype=np.float64)
+            cv2.polylines(img1, [pts.reshape((-1, 1, 2)).astype(np.int32)], isClosed=False, color=(0, 255, 0), thickness=5)
+
+            rads = np.array([pixToRad(*pt) for pt in pts], dtype=np.float64)
+            
+            rad_center = np.average(rads, axis=0)
+            rad_half_w = (rads[2,0] - rads[0,0]) / 2
+            rad_half_h = (rads[3,1] - rads[1,1]) / 2
+            new_rads = np.array([ # ← ↓ → ↑
+                [rad_center[0]-rad_half_w, rad_center[1]],
+                [rad_center[0], rad_center[1]-rad_half_h],
+                [rad_center[0]+rad_half_w, rad_center[1]],
+                [rad_center[0], rad_center[1]+rad_half_h]
+            ], dtype=np.float64)
+            new_pts = np.array([radToNewPix(*rad) for rad in new_rads], dtype=np.int32)
+            cv2.polylines(img2, [new_pts.reshape((-1, 1, 2)).astype(np.int32)], isClosed=False, color=(0, 255, 0), thickness=3)
+
+            points_in_range = livoxInterface.get_points_in_range(rad_center, rad_half_w, rad_half_h)
+            target_distance = np.median(points_in_range[:,2])
+            #print(rads, rad_center, rad_half_w, rad_half_h, target_distance)
+            cv2.putText(img2, f"dis: {target_distance:.2f} mm", radToNewPix(*rads[0]).astype(np.int32), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, 
+                        [0, 255, 0], 
+                        1, 
+                        cv2.LINE_AA)
