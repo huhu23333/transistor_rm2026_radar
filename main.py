@@ -57,7 +57,7 @@ def main():
     camera.stop_grabbing()
     #cv2.destroyAllWindows()
 
-    
+
 
 if __name__ == "__main__":
     main()

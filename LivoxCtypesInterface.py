@@ -149,49 +149,40 @@ class LivoxInterface:
     def endUpdatingThread(self):
         self.py_updatingResult = False
 
-    def get_nearest_points(self, rad_center, number, return_valve = "ypr"):
-        integrateResult_temp = self.integrateResult.copy()
+    def get_nearest_points(self, rad_center, number):
         integrateResult_rad_temp = self.integrateResult_rad.copy()
-        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
+        temp_size = len(integrateResult_rad_temp)
         if temp_size == 0:
             return np.zeros((number,5))
-        integrateResult_temp = integrateResult_temp[:temp_size]
-        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
         return_size = min(temp_size, number)
         min_distance_indexes = np.argsort(np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0]) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])))[:return_size]
-        if return_valve == "ypr":
-            return integrateResult_rad_temp[min_distance_indexes]
-        else:
-            return integrateResult_temp[min_distance_indexes]
+        return integrateResult_rad_temp[min_distance_indexes]
 
-    def get_points_in_range(self, rad_center, rad_half_w, rad_half_h, method = "L1", return_valve = "ypr"): # L1 L2 L-infinity
-        integrateResult_temp = self.integrateResult.copy()
+    def get_points_in_range(self, rad_center, rad_half_w, rad_half_h, method = "L1"): # L1 L2 L-infinity
         integrateResult_rad_temp = self.integrateResult_rad.copy()
-        temp_size = min(len(integrateResult_temp), len(integrateResult_rad_temp))
+        temp_size = len(integrateResult_rad_temp)
         if temp_size == 0:
-            return self.get_nearest_points(rad_center, 100, return_valve)
-        integrateResult_temp = integrateResult_temp[:temp_size]
-        integrateResult_rad_temp = integrateResult_rad_temp[:temp_size]
+            return self.get_nearest_points(rad_center, 100)
         if method == "L1":
             mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0])/rad_half_w + np.abs(integrateResult_rad_temp[:,1]-rad_center[1])/rad_half_h <= 1
             if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+                return self.get_nearest_points(rad_center, 100)
+            return integrateResult_rad_temp[mask]
         elif method == "L2":
             mask = np.sqrt(np.square(integrateResult_rad_temp[:,0]-rad_center[0])/(rad_half_w**2) + np.square(integrateResult_rad_temp[:,1]-rad_center[1])/(rad_half_h**2)) <= 1
             if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+                return self.get_nearest_points(rad_center, 100)
+            return integrateResult_rad_temp[mask]
         elif method == "L-infinity":
             mask = np.logical_and(np.abs(integrateResult_rad_temp[:,0]-rad_center[0]) <= rad_half_w , np.abs(integrateResult_rad_temp[:,1]-rad_center[1]) <= rad_half_h)
             if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+                return self.get_nearest_points(rad_center, 100)
+            return integrateResult_rad_temp[mask]
         else: # 默认使用L1距离
             mask = np.abs(integrateResult_rad_temp[:,0]-rad_center[0])/rad_half_w + np.abs(integrateResult_rad_temp[:,1]-rad_center[1])/rad_half_h <= 1
             if not np.any(mask):
-                return self.get_nearest_points(rad_center, 100, return_valve)
-            return integrateResult_rad_temp[mask] if return_valve == "ypr" else integrateResult_temp[mask]
+                return self.get_nearest_points(rad_center, 100)
+            return integrateResult_rad_temp[mask]
     
     # -------------------------以下为测试代码---------------------------------
 
