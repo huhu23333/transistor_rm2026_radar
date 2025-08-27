@@ -191,7 +191,7 @@ if debug:
             points_in_range = livoxInterface.get_points_in_range(rad_center, rad_half_w, rad_half_h)
             target_distance = np.median(points_in_range[:,2])
             #print(rads, rad_center, rad_half_w, rad_half_h, target_distance)
-            cv2.putText(img2, f"dis: {target_distance:.2f} mm", radToNewPix(*rads[0]).astype(np.int32), 
+            cv2.putText(img2, f"dist: {target_distance:.2f} mm", radToNewPix(*rads[0]).astype(np.int32), 
                         cv2.FONT_HERSHEY_SIMPLEX, 
                         1, 
                         [0, 255, 0], 

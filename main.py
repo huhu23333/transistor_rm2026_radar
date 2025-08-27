@@ -30,7 +30,11 @@ def main():
     camera.set_gain(16.0)  # 设置增益为10dB
     camera.start_grabbing()
 
-    model_path = "best.pt"
+    """ model_path = "rmCar_yolov12n.pt"
+    conf_threshold = 0.25
+    model = YOLO(model_path)
+    model.export(format="openvino",int8=True) """
+    model_path = "rmCar_yolov12n_int8_openvino_model"
     conf_threshold = 0.25
     model = YOLO(model_path)
 
