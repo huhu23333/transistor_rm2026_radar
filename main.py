@@ -3,12 +3,14 @@ sys.path.append(os.path.dirname(__file__))
 from LivoxCtypesInterface import LivoxInterface
 from Camera import Camera
 from utils import pixToRad, radToPix, newPixToRad, radToNewPix
+from ArmorDetector import ArmorDetector
 import threading
 import numpy as np
 import math
 import cv2
 import random
 from ultralytics import YOLO
+from PIL import Image
 
 from utils import mapToRad, debug_rand_octagon, debug_yolo_to_distance
 
@@ -34,18 +36,33 @@ def main():
     conf_threshold = 0.25
     model = YOLO(model_path)
     model.export(format="openvino",int8=True) """
-    model_path = "rmCar_yolov12n_int8_openvino_model"
+    car_model_path = "rmCar_yolov12n_int8_openvino_model"
     conf_threshold = 0.25
-    model = YOLO(model_path)
+    car_model = YOLO(car_model_path)
+
+    armorDetector = ArmorDetector()
 
     while True:
 
         img = camera.get_image()
         if img is not None:
-            model_results = model(img, conf=conf_threshold, verbose=False)
-            annotated_img = model_results[0].plot()
+            car_model_results = car_model(img, conf=conf_threshold, verbose=False)
 
-            """ for box in model_results[0].boxes:
+
+            # 处理每个检测框
+            for box in car_model_results[0].boxes.xyxy:
+                x1, y1, x2, y2 = map(int, box)
+                # 提取边界框区域
+                box_region = img[y1:y2, x1:x2]
+                # 在这里进行图像处理
+                armorDetector.detectArmors(box_region)
+                # 将处理后的区域放回原图
+                # img[y1:y2, x1:x2] = box_region
+
+            #armorDetector.detectArmors(img)
+            annotated_img = car_model_results[0].plot()
+
+            """ for box in car_model_results[0].boxes:
                 print(box) """
             
             img_radar = livoxInterface.image2dResult[0]
@@ -54,7 +71,7 @@ def main():
             cv2.copyTo(img_radar, img_radar_mask, img_mapToRad)
 
             #debug_rand_octagon(annotated_img, img_mapToRad, livoxInterface)
-            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, model_results[0].boxes)
+            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, car_model_results[0].boxes)
 
             annotated_img = cv2.resize(annotated_img, (1006, 759))
             cv2.imshow("Camera", annotated_img)
