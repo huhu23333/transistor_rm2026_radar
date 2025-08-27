@@ -12,6 +12,10 @@ from ultralytics import YOLO
 
 from utils import mapToRad, debug_rand_octagon, debug_yolo_to_distance
 
+
+
+
+
 def main():
     livoxInterface = LivoxInterface()
     livoxInterface.pyif_Init()
@@ -27,7 +31,7 @@ def main():
     camera.start_grabbing()
 
     model_path = "best.pt"
-    conf_threshold = 0.5
+    conf_threshold = 0.25
     model = YOLO(model_path)
 
     while True:

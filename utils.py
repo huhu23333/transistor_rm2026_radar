@@ -5,6 +5,7 @@ import cv2
 
 
 debug = True
+team_color = "RED"
 
 
 """ 内参矩阵 K:
@@ -48,6 +49,68 @@ def newPixToRad(u, v, image_size = (1024, 1024)):
 
 def radToNewPix(yaw_rad, pitch_rad, image_size = (1024, 1024)):
     result = np.array([((yaw_rad-rad_bais[0])/1.2287117934040082+0.5)*image_size[0], (-(pitch_rad-rad_bais[1])/1.2287117934040082+0.5)*image_size[1]])
+    return result
+
+def radToCamXYZ(yaw, pitch, r):
+    x = r * np.cos(yaw) * np.cos(pitch)     # 向前
+    y = r * -np.sin(yaw) * np.cos(pitch)    # 向左
+    z = r * np.sin(pitch)                   # 向上
+    return np.array([x, y, z])
+
+cam_position_red = np.array([-1400, 5400, 2500+1200])     # x,y,z 向前,向左,向上 mm     使用rm25场地数据，假设雷达在雷达基座中心1.2m高支架上
+cam_orientation_red = np.array([-0.13552771398550073, -0.23370661419387276, 0])  # yaw,pitch,roll 上视、左视、后视为顺时针 弧度制   假设画面中心对准场地中心地面
+cam_position_blue = np.array([28000-cam_position_red[0], 15000-cam_position_red[1], cam_position_red[2]])
+cam_orientation_blue = np.array([cam_orientation_red[0]+np.pi, cam_orientation_red[1], cam_orientation_red[2]])
+
+if debug:
+    cam_position = np.zeros((3))
+    cam_orientation = np.zeros((3))
+else:
+    if team_color == "RED":
+        cam_position = cam_position_red
+        cam_orientation = cam_orientation_red
+    else:
+        cam_position = cam_position_blue
+        cam_orientation = cam_orientation_blue
+def globalXYZToCamXYZ(x, y, z):
+    #平移
+    x1, y1, z1 = np.array([x, y, z]) - cam_position
+    #yaw
+    yaw = cam_orientation[0]
+    x2 = x1 * np.cos(-yaw) + y1 * np.sin(-yaw)
+    y2 = y1 * np.cos(-yaw) - x1 * np.sin(-yaw)
+    z2 = z1
+    #pitch
+    pitch = cam_orientation[1]
+    x3 = x2 * np.cos(-pitch) - z2 * np.sin(-pitch)
+    y3 = y2
+    z3 = z2 * np.cos(-pitch) + x2 * np.sin(-pitch)
+    #roll
+    roll = cam_orientation[2]
+    x_result = x3
+    y_result = y3 * np.cos(-roll) - z3 * np.sin(-roll)
+    z_result = z3 * np.cos(-roll) + y3 * np.sin(-roll)
+    result = np.array([x_result, y_result, z_result])
+    return result
+
+def camXYZToGlobalXYZ(x, y, z):
+    #roll
+    roll = cam_orientation[2]
+    x1 = x
+    y1 = y * np.cos(roll) - z * np.sin(roll)
+    z1 = z * np.cos(roll) + y * np.sin(roll)
+    #pitch
+    pitch = cam_orientation[1]
+    x2 = x1 * np.cos(pitch) - z1 * np.sin(pitch)
+    y2 = y1
+    z2 = z1 * np.cos(pitch) + x1 * np.sin(pitch)
+    #yaw
+    yaw = cam_orientation[0]
+    x3 = x2 * np.cos(yaw) + y2 * np.sin(yaw)
+    y3 = y2 * np.cos(yaw) - x2 * np.sin(yaw)
+    z3 = z2
+    #平移
+    result = np.array([x3, y3, z3]) + cam_position
     return result
 
 if debug:
@@ -129,6 +192,15 @@ if debug:
             target_distance = np.median(points_in_range[:,2])
             #print(rads, rad_center, rad_half_w, rad_half_h, target_distance)
             cv2.putText(img2, f"dis: {target_distance:.2f} mm", radToNewPix(*rads[0]).astype(np.int32), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, 
+                        [0, 255, 0], 
+                        1, 
+                        cv2.LINE_AA)
+            
+            target_position_cam = radToCamXYZ(rad_center[0], rad_center[1], target_distance)
+            target_position_global = camXYZToGlobalXYZ(*target_position_cam)
+            cv2.putText(img2, f"x:[{target_position_global[0]:.2f}], y:[{target_position_global[1]:.2f}], z:[{target_position_global[2]:.2f}]", radToNewPix(*rads[1]).astype(np.int32), 
                         cv2.FONT_HERSHEY_SIMPLEX, 
                         1, 
                         [0, 255, 0], 
