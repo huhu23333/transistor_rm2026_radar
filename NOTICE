@@ -7,5 +7,6 @@ Source: https://gitee.com/Carryzhangzky/pfa_vision_radar
 License: GNU General Public License version 2 (GPLv2)
 Included component:
 - RM_serial_py/ (located in RM_serial_py/)
+- main.py (located in CommunicationAndGuess_ModifiedFromPFA.py)
 
 -----

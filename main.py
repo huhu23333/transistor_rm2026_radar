@@ -11,6 +11,7 @@ import random
 from ultralytics import YOLO
 from PIL import Image
 from YOLOResultsFilter import remove_overlapping_boxes
+from CommunicationAndGuess_ModifiedFromPFA import Communicator
 
 from CoordinateConversions import mapToRad, debug_rand_octagon, debug_yolo_to_distance
 
@@ -42,6 +43,9 @@ def main():
     armor_conf_threshold = 0.5
     armor_model = YOLO(armor_model_path)
     #armor_model.export(format="openvino",int8=True)
+
+    communicator = Communicator(True)
+    communicator.start_serial()
 
     while True:
 
