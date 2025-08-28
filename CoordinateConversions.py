@@ -113,6 +113,45 @@ def camXYZToGlobalXYZ(x, y, z):
     result = np.array([x3, y3, z3]) + cam_position
     return result
 
+def get_target_positions(livoxInterface, custom_car_boxes):
+    results = {}
+    for class_index in range(13):
+        results[class_index] = []
+    for custom_box_infos in custom_car_boxes:
+        center = custom_box_infos["box"].xywh[0,:2]
+        half_w = custom_box_infos["box"].xywh[0,2]/2
+        half_h = custom_box_infos["box"].xywh[0,3]/2
+        pts = np.array([ # ← ↓ → ↑
+            [center[0]-half_w, center[1]],
+            [center[0], center[1]+half_h],
+            [center[0]+half_w, center[1]],
+            [center[0], center[1]-half_h]
+        ], dtype=np.float64)
+
+        rads = np.array([pixToRad(*pt) for pt in pts], dtype=np.float64)
+        rad_center = np.average(rads, axis=0)
+        rad_half_w = (rads[2,0] - rads[0,0]) / 2
+        rad_half_h = (rads[3,1] - rads[1,1]) / 2
+
+        points_in_range = livoxInterface.get_points_in_range(rad_center, rad_half_w, rad_half_h)
+        target_distance = np.median(points_in_range[:,2]) # 相当于中值滤波
+
+        target_position_cam = radToCamXYZ(rad_center[0], rad_center[1], target_distance)
+        target_position_global = camXYZToGlobalXYZ(*target_position_cam)
+
+        transformed_center = np.array(radToNewPix(*rad_center), dtype=np.int32)
+        result = {
+            "global_position" : target_position_global,
+            "camera_position" : target_position_cam,
+            "diatance" : target_distance,
+            "origin_image_position" : center,
+            "transformed_image_position" : transformed_center
+        }
+        results[custom_box_infos["cls"]].append(result)
+    return results
+        
+
+
 if debug:
     """ map_x = np.zeros((1024, 1024), dtype=np.float32)
     map_y = np.zeros((1024, 1024), dtype=np.float32)
@@ -161,11 +200,40 @@ if debug:
         points_in_range = livoxInterface.get_points_in_range(pixToRad(*rand_posi), 0.03, 0.03)
         print(np.median(points_in_range[:,2]))
 
-    def debug_yolo_to_distance(img1, img2, livoxInterface, boxes):
-        for boxInfos in boxes:
-            center = boxInfos["box"].xywh[0,:2]
-            half_w = boxInfos["box"].xywh[0,2]/2
-            half_h = boxInfos["box"].xywh[0,3]/2
+    def debug_yolo_to_distance(img1, img2, livoxInterface, custom_car_boxes):
+        position_results = get_target_positions(livoxInterface, custom_car_boxes)
+        for class_index in range(13):
+            for position_infos in position_results[class_index]:
+                target_global_position = position_infos["global_position"]
+                cv2.putText(img2, 
+                            f"cls: [{class_index}]",
+                            position_infos["transformed_image_position"] + np.array([50, -20], dtype=np.int32), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            1, 
+                            [0, 255, 0], 
+                            1, 
+                            cv2.LINE_AA)
+                cv2.putText(img2, 
+                            f"dist: {position_infos["diatance"]:.2f} mm",
+                            position_infos["transformed_image_position"] + np.array([50, 10], dtype=np.int32), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            1, 
+                            [0, 255, 0], 
+                            1, 
+                            cv2.LINE_AA)
+                cv2.putText(img2, 
+                            f"x:[{target_global_position[0]:.2f}], y:[{target_global_position[1]:.2f}], z:[{target_global_position[2]:.2f}]",
+                            position_infos["transformed_image_position"] + np.array([50, 40], dtype=np.int32), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            1, 
+                            [0, 255, 0], 
+                            1, 
+                            cv2.LINE_AA)
+
+        """ for custom_box_infos in custom_car_boxes:
+            center = custom_box_infos["box"].xywh[0,:2]
+            half_w = custom_box_infos["box"].xywh[0,2]/2
+            half_h = custom_box_infos["box"].xywh[0,3]/2
             pts = np.array([ # ← ↓ → ↑
                 [center[0]-half_w, center[1]],
                 [center[0], center[1]+half_h],
@@ -207,9 +275,9 @@ if debug:
                         1, 
                         cv2.LINE_AA)
 
-            cv2.putText(img2, f"cls:[{boxInfos["cls"]}]", radToNewPix(*rads[3]).astype(np.int32), 
+            cv2.putText(img2, f"cls:[{custom_box_infos["cls"]}]", radToNewPix(*rads[3]).astype(np.int32), 
                         cv2.FONT_HERSHEY_SIMPLEX, 
                         1, 
                         [0, 255, 0], 
                         1, 
-                        cv2.LINE_AA)
+                        cv2.LINE_AA) """

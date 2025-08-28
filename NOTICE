@@ -1,0 +1,11 @@
+This project makes use of the following open source software:
+
+-----
+
+Project: PFA_Vision_Radar
+Source: https://gitee.com/Carryzhangzky/pfa_vision_radar
+License: GNU General Public License version 2 (GPLv2)
+Included component:
+- RM_serial_py/ (located in RM_serial_py/)
+
+-----

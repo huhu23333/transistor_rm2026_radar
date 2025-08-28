@@ -2,7 +2,7 @@ import os, sys
 sys.path.append(os.path.dirname(__file__))
 from LivoxCtypesInterface import LivoxInterface
 from Camera import Camera
-from utils import pixToRad, radToPix, newPixToRad, radToNewPix
+from CoordinateConversions import pixToRad, radToPix, newPixToRad, radToNewPix
 import threading
 import numpy as np
 import math
@@ -10,8 +10,9 @@ import cv2
 import random
 from ultralytics import YOLO
 from PIL import Image
+from YOLOResultsFilter import remove_overlapping_boxes
 
-from utils import mapToRad, debug_rand_octagon, debug_yolo_to_distance
+from CoordinateConversions import mapToRad, debug_rand_octagon, debug_yolo_to_distance
 
 
 
@@ -48,11 +49,17 @@ def main():
         if img is not None:
             car_model_results = car_model(img, conf=car_conf_threshold, verbose=False)
 
+            # 去除重叠检测框，保留较大的
+            keep_indices = remove_overlapping_boxes(car_model_results[0].boxes)
+            remove_count = len(car_model_results[0].boxes) - len(keep_indices)
+            car_model_results[0].boxes = car_model_results[0].boxes[keep_indices]
+            """ if remove_count:
+                print(f"removed {remove_count} boxes") """
 
             # 处理每个检测框
-            carBoxes = []
+            custom_car_boxes = []
             for carBox in car_model_results[0].boxes:
-                carBoxes.append({"box": carBox})
+                custom_car_boxes.append({"box": carBox})
                 x1, y1, x2, y2 = map(int, carBox.xyxy[0])
                 # 提取边界框区域
                 car_box_region = img[y1:y2, x1:x2]
@@ -63,9 +70,9 @@ def main():
                 for armorBox in armor_model_results[0].boxes:
                     clsCount[int(armorBox.cls)] += 1
                 if sum(clsCount) == 0:
-                    carBoxes[-1]["cls"] = 12
+                    custom_car_boxes[-1]["cls"] = 12
                 else:
-                    carBoxes[-1]["cls"] = clsCount.index(max(clsCount))
+                    custom_car_boxes[-1]["cls"] = clsCount.index(max(clsCount))
                 # 将处理后的区域放回原图
                 img[y1:y2, x1:x2] = annotated_img_armor
 
@@ -80,7 +87,7 @@ def main():
             cv2.copyTo(img_radar, img_radar_mask, img_mapToRad)
 
             #debug_rand_octagon(annotated_img, img_mapToRad, livoxInterface)
-            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, carBoxes)
+            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, custom_car_boxes)
 
             #annotated_img = cv2.resize(annotated_img, (1006, 759))
             cv2.imshow("Camera", annotated_img)
