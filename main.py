@@ -3,7 +3,6 @@ sys.path.append(os.path.dirname(__file__))
 from LivoxCtypesInterface import LivoxInterface
 from Camera import Camera
 from utils import pixToRad, radToPix, newPixToRad, radToNewPix
-from ArmorDetector import ArmorDetector
 import threading
 import numpy as np
 import math
@@ -13,8 +12,6 @@ from ultralytics import YOLO
 from PIL import Image
 
 from utils import mapToRad, debug_rand_octagon, debug_yolo_to_distance
-
-
 
 
 
@@ -33,33 +30,45 @@ def main():
     camera.start_grabbing()
 
     """ model_path = "rmCar_yolov12n.pt"
-    conf_threshold = 0.25
+    car_conf_threshold = 0.25
     model = YOLO(model_path)
     model.export(format="openvino",int8=True) """
     car_model_path = "rmCar_yolov12n_int8_openvino_model"
-    conf_threshold = 0.25
+    car_conf_threshold = 0.25
     car_model = YOLO(car_model_path)
 
-    armorDetector = ArmorDetector()
+    armor_model_path = "rmArmor_yolov12n_int8_openvino_model"
+    armor_conf_threshold = 0.5
+    armor_model = YOLO(armor_model_path)
+    #armor_model.export(format="openvino",int8=True)
 
     while True:
 
         img = camera.get_image()
         if img is not None:
-            car_model_results = car_model(img, conf=conf_threshold, verbose=False)
+            car_model_results = car_model(img, conf=car_conf_threshold, verbose=False)
 
 
             # 处理每个检测框
-            for box in car_model_results[0].boxes.xyxy:
-                x1, y1, x2, y2 = map(int, box)
+            carBoxes = []
+            for carBox in car_model_results[0].boxes:
+                carBoxes.append({"box": carBox})
+                x1, y1, x2, y2 = map(int, carBox.xyxy[0])
                 # 提取边界框区域
-                box_region = img[y1:y2, x1:x2]
+                car_box_region = img[y1:y2, x1:x2]
                 # 在这里进行图像处理
-                armorDetector.detectArmors(box_region)
+                armor_model_results = armor_model(car_box_region, conf=armor_conf_threshold, verbose=False)
+                annotated_img_armor = armor_model_results[0].plot()
+                clsCount = [0]*12
+                for armorBox in armor_model_results[0].boxes:
+                    clsCount[int(armorBox.cls)] += 1
+                if sum(clsCount) == 0:
+                    carBoxes[-1]["cls"] = 12
+                else:
+                    carBoxes[-1]["cls"] = clsCount.index(max(clsCount))
                 # 将处理后的区域放回原图
-                # img[y1:y2, x1:x2] = box_region
+                img[y1:y2, x1:x2] = annotated_img_armor
 
-            #armorDetector.detectArmors(img)
             annotated_img = car_model_results[0].plot()
 
             """ for box in car_model_results[0].boxes:
@@ -71,9 +80,9 @@ def main():
             cv2.copyTo(img_radar, img_radar_mask, img_mapToRad)
 
             #debug_rand_octagon(annotated_img, img_mapToRad, livoxInterface)
-            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, car_model_results[0].boxes)
+            debug_yolo_to_distance(annotated_img, img_mapToRad, livoxInterface, carBoxes)
 
-            annotated_img = cv2.resize(annotated_img, (1006, 759))
+            #annotated_img = cv2.resize(annotated_img, (1006, 759))
             cv2.imshow("Camera", annotated_img)
             cv2.imshow("Camera mapToRad", img_mapToRad)
 

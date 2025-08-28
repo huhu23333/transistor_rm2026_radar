@@ -162,10 +162,10 @@ if debug:
         print(np.median(points_in_range[:,2]))
 
     def debug_yolo_to_distance(img1, img2, livoxInterface, boxes):
-        for box in boxes:
-            center = box.xywh[0,:2]
-            half_w = box.xywh[0,2]/2
-            half_h = box.xywh[0,3]/2
+        for boxInfos in boxes:
+            center = boxInfos["box"].xywh[0,:2]
+            half_w = boxInfos["box"].xywh[0,2]/2
+            half_h = boxInfos["box"].xywh[0,3]/2
             pts = np.array([ # ← ↓ → ↑
                 [center[0]-half_w, center[1]],
                 [center[0], center[1]+half_h],
@@ -201,6 +201,13 @@ if debug:
             target_position_cam = radToCamXYZ(rad_center[0], rad_center[1], target_distance)
             target_position_global = camXYZToGlobalXYZ(*target_position_cam)
             cv2.putText(img2, f"x:[{target_position_global[0]:.2f}], y:[{target_position_global[1]:.2f}], z:[{target_position_global[2]:.2f}]", radToNewPix(*rads[1]).astype(np.int32), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, 
+                        [0, 255, 0], 
+                        1, 
+                        cv2.LINE_AA)
+
+            cv2.putText(img2, f"cls:[{boxInfos["cls"]}]", radToNewPix(*rads[3]).astype(np.int32), 
                         cv2.FONT_HERSHEY_SIMPLEX, 
                         1, 
                         [0, 255, 0], 
