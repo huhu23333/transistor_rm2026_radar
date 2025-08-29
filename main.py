@@ -106,7 +106,7 @@ def main():
                     communicator.add_data(communicator_cls, cls_global_position[0], cls_global_position[1])
 
             #annotated_img = cv2.resize(annotated_img, (1006, 759))
-            cv2.imshow("Camera", annotated_img)
+            #cv2.imshow("Camera", annotated_img)
             cv2.imshow("Camera mapToRad", img_mapToRad)
 
         if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出

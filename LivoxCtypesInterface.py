@@ -241,7 +241,8 @@ class LivoxInterface:
         #self.endUpdatingThread()
         #self.visualizeNowReslut3d()
         while True:
-            cv2.imshow("Livox test", self.draw2dImage())
+            self.draw2dImage()
+            """ cv2.imshow("Livox test", self.draw2dImage())
             #print(f"{self.py_readCount} | {self.pyif_writeCount.value} | {len(self.integrateResult)}")
             if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
-                break
+                break """
