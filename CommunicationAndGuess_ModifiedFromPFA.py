@@ -9,15 +9,11 @@ sys.path.append(os.path.dirname(__file__))
 from RM_serial_py.ser_api import  build_send_packet, receive_packet, Radar_decision, \
     build_data_decision, build_data_radar_all
 
-class FakeSerial:
-    def write(self, packet):
-        print(packet)
-    def read_all(self):
-        return b''
+from FakeSerial import FakeSerial_Radar
 
 class Communicator:
-    def __init__(self, debug = False):
-        self.state = 'B'  # R:红方/B:蓝方
+    def __init__(self, state = 'B', debug = False):
+        self.state = state  # R:红方/B:蓝方
         # 初始化战场信息UI（标记进度、双倍易伤次数、双倍易伤触发状态）
         self.double_vulnerability_chance = -1  # 双倍易伤机会数
         self.opponent_double_vulnerability = -1  # 是否正在触发双倍易伤
@@ -90,7 +86,7 @@ class Communicator:
         if not debug:
             self.ser1 = serial.Serial('COM1', 115200, timeout=1)  # 串口，替换 'COM1' 为你的串口号
         else:
-            self.ser1 = FakeSerial()
+            self.ser1 = FakeSerial_Radar()
         self.filter = Filter(window_size=3, communicator=self, max_inactive_time=2)
         self.start_serial()
 
@@ -127,7 +123,7 @@ class Communicator:
         def send_point(send_name, all_filter_data):
             # front_time = time.time()
             # 转换为地图坐标系
-            filtered_xyz = (all_filter_data[send_name][1], all_filter_data[send_name][0])
+            filtered_xyz = (all_filter_data[send_name][0], all_filter_data[send_name][1])
             # 转换为裁判系统单位cm （mm to cm）
             ser_x = int(filtered_xyz[0]) / 10
             ser_y = int(filtered_xyz[1]) / 10
@@ -273,7 +269,7 @@ class Communicator:
                 packet, seq = build_send_packet(ser_data, seq, [0x03, 0x05])
                 self.ser1.write(packet)
                 time.sleep(0.2)
-                print(send_map,seq)
+                # print(send_map,seq)
                 # 超过单点预测时间上限，更新上次预测的进度
                 if time.time() - update_time > guess_time_limit:
                     update_time = time.time()
@@ -438,7 +434,7 @@ if __name__ == "__main__":
 
     communicator = Communicator(True)
     communicator.start_serial()
-    cls, X_M, Y_M = "B7",500,1000
+    cls, X_M, Y_M = "R7",500,1000
 
     while True:
         communicator.add_data(cls, X_M, Y_M)
