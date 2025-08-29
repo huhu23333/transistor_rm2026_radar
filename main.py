@@ -57,7 +57,7 @@ def main():
     communicator = Communicator(state=("R" if team_color == "RED" else "B"), debug=True)
     communicator.start_serial()
 
-    coordinateConverter = CoordinateConverter(team_color = team_color, debug = True)
+    coordinateConverter = CoordinateConverter(team_color = team_color, debugFlags = {"debugPosition": False, "debugFunction": True})
 
     while True:
 

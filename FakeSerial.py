@@ -40,7 +40,7 @@ class map_robot_data_t_py:
 
     def print_infos(self):
         info_to_print = ""
-        info_to_print += "发送数据解析:(单位cm)"
+        info_to_print += "模拟发送数据解析:(单位cm)"
         info_to_print += f"|英雄:({self.hero_position_x}, {self.hero_position_y})"
         info_to_print += f"|工程:({self.engineer_position_x}, {self.engineer_position_y})"
         info_to_print += f"|3号步兵:({self.infantry_3_position_x}, {self.infantry_3_position_y})"

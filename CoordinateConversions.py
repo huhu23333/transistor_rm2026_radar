@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 
 class CoordinateConverter:
-    def __init__(self, team_color = "RED", debug = False):
-        self.debug = debug
+    def __init__(self, team_color = "RED", debugFlags = {"debugPosition": False, "debugFunction": True}):
+        self.debugFlags = debugFlags
         self.team_color = team_color
         """ 内参矩阵 K:
         [[3.24060091e+03 0.00000000e+00 2.03544211e+03]
@@ -21,7 +21,7 @@ class CoordinateConverter:
         self.cam_orientation_red = np.array([-0.13552771398550073, -0.23370661419387276, 0])  # yaw,pitch,roll 上视、左视、后视为顺时针 弧度制   假设画面中心对准场地中心地面
         self.cam_position_blue = np.array([28000-self.cam_position_red[0], 15000-self.cam_position_red[1], self.cam_position_red[2]])
         self.cam_orientation_blue = np.array([self.cam_orientation_red[0]+np.pi, self.cam_orientation_red[1], self.cam_orientation_red[2]])
-        if self.debug:
+        if self.debugFlags["debugPosition"]:
             self.cam_position = np.zeros((3))
             self.cam_orientation = np.zeros((3))
         else:
@@ -32,7 +32,7 @@ class CoordinateConverter:
                 self.cam_position = self.cam_position_blue
                 self.cam_orientation = self.cam_orientation_blue
 
-        if self.debug:
+        if self.debugFlags["debugFunction"]:
             """ map_x = np.zeros((1024, 1024), dtype=np.float32)
             map_y = np.zeros((1024, 1024), dtype=np.float32)
             print("!!!")
