@@ -125,8 +125,8 @@ class Communicator:
             # 转换为地图坐标系
             filtered_xyz = (all_filter_data[send_name][0], all_filter_data[send_name][1])
             # 转换为裁判系统单位cm （mm to cm）
-            ser_x = int(filtered_xyz[0]) / 10
-            ser_y = int(filtered_xyz[1]) / 10
+            ser_x = min(max(int(filtered_xyz[0] / 10), 0), 65535)
+            ser_y = min(max(int(filtered_xyz[1] / 10), 0), 65535)
             # 打包坐标数据包
             # data = build_data_radar(self.mapping_table.get(send_name), ser_x, ser_y)
             # packet, seq_s = build_send_packet(data, seq_s, [0x03, 0x05])
