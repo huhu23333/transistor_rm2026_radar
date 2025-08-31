@@ -12,6 +12,7 @@ from RM_serial_py.ser_api import  build_send_packet, receive_packet, Radar_decis
     build_data_decision, build_data_radar_all
 
 from FakeSerial import FakeSerial_Radar
+from SemiAutoSerialPort import semi_auto_serial_port
 
 class Communicator:
     def __init__(self, state = 'B', visualize_map = True, visualize_information = True, allow_no_serial = False):
@@ -86,8 +87,9 @@ class Communicator:
             # "B7": [(0, 0), (22.4, 6.3)]
         }
 
+        serial_port = semi_auto_serial_port(default_port = "COM5") # 串口，替换 'COM5' 为你的串口号（也可以不换()）
         try:
-            real_serial = serial.Serial('COM5', 115200, timeout=1)  # 串口，替换 'COM1' 为你的串口号
+            real_serial = serial.Serial(serial_port, 115200, timeout=1)
         except serial.serialutil.SerialException as e:
             e_serial = e
             real_serial = None
