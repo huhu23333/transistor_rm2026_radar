@@ -54,7 +54,7 @@ def main():
     armor_model = YOLO(armor_model_path)
     #armor_model.export(format="openvino",int8=True)
 
-    communicator = Communicator(state=("R" if team_color == "RED" else "B"), debug=True)
+    communicator = Communicator(state=("R" if team_color == "RED" else "B"), visualize_map=True, visualize_information=True, allow_no_serial=True)
     communicator.start_serial()
 
     coordinateConverter = CoordinateConverter(team_color = team_color, debugFlags = {"debugPosition": False, "debugFunction": True})
@@ -107,10 +107,12 @@ def main():
 
             #annotated_img = cv2.resize(annotated_img, (1006, 759))
             #cv2.imshow("Camera", annotated_img)
+            img_mapToRad = cv2.resize(img_mapToRad, (800, 800))
             cv2.imshow("Camera mapToRad", img_mapToRad)
 
-        if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
-            break
+        cv2.waitKey(1)
+        """ if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出
+            break """
     camera.stop_grabbing()
     #cv2.destroyAllWindows()
 

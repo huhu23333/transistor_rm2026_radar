@@ -23,9 +23,9 @@ class map_robot_data_t_py:
         self.sentry_position_x = 0
         self.sentry_position_y = 0
         if type(initData) == bytearray:
-            self.__build_from_bytearray__(initData)
+            self.__build_from_bytearray(initData)
 
-    def __build_from_bytearray__(self, data):
+    def __build_from_bytearray(self, data):
         data_list = [struct.unpack_from("<H", data[i*2:i*2+2])[0] for i in range(12)]
         #print(data_list)
         self.hero_position_x = data_list[0]
@@ -41,16 +41,17 @@ class map_robot_data_t_py:
         self.sentry_position_x = data_list[10]
         self.sentry_position_y = data_list[11]
 
-    def print_infos(self, visualize = False, map_image = np.zeros((750, 1400, 3))):
-        info_to_print = ""
-        info_to_print += "模拟发送数据解析:(单位cm)"
-        info_to_print += f"|英雄:({self.hero_position_x}, {self.hero_position_y})"
-        info_to_print += f"|工程:({self.engineer_position_x}, {self.engineer_position_y})"
-        info_to_print += f"|3号步兵:({self.infantry_3_position_x}, {self.infantry_3_position_y})"
-        info_to_print += f"|4号步兵:({self.infantry_4_position_x}, {self.infantry_4_position_y})"
-        info_to_print += f"|5号步兵:({self.infantry_5_position_x}, {self.infantry_5_position_y})"
-        info_to_print += f"|哨兵:({self.sentry_position_x}, {self.sentry_position_y})"
-        print(info_to_print)
+    def print_infos(self, print_info = True, visualize = True, map_image = np.zeros((750, 1400, 3)), real_serial = None):
+        if print_info:
+            info_to_print = ""
+            info_to_print += "模拟发送数据解析:(单位cm)"
+            info_to_print += f"|英雄:({self.hero_position_x}, {self.hero_position_y})"
+            info_to_print += f"|工程:({self.engineer_position_x}, {self.engineer_position_y})"
+            info_to_print += f"|3号步兵:({self.infantry_3_position_x}, {self.infantry_3_position_y})"
+            info_to_print += f"|4号步兵:({self.infantry_4_position_x}, {self.infantry_4_position_y})"
+            info_to_print += f"|5号步兵:({self.infantry_5_position_x}, {self.infantry_5_position_y})"
+            info_to_print += f"|哨兵:({self.sentry_position_x}, {self.sentry_position_y})"
+            print(info_to_print)
         if visualize:
             if self.hero_position_x != 0 or self.hero_position_y != 0:
                 visualize_position = (int(self.hero_position_x/100/28*1400), 750-int(self.hero_position_y/100/15*750))
@@ -76,15 +77,21 @@ class map_robot_data_t_py:
                 visualize_position = (int(self.sentry_position_x/100/28*1400), 750-int(self.sentry_position_y/100/15*750))
                 cv2.circle(map_image, visualize_position, 5, (0,255,0), -1)
                 cv2.putText(map_image, f"Sentry({self.sentry_position_x},{self.sentry_position_y})", (visualize_position[0]+10, visualize_position[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,255,0))
-            cv2.imshow("FakeSerialVisualize", map_image)
-            cv2.waitKey(1)
+            map_image = cv2.resize(map_image, (700, 375))
+            cv2.imshow(f"FakeSerialVisualize | real_serial : {real_serial.port if real_serial else "None"}", map_image)
+            cv2.waitKey(1) 
 
 class FakeSerial_Radar:
-    def __init__(self):
+    def __init__(self, print_info = True, visualize = True, real_serial = None):
         pil_map_image = Image.open(os.path.join(os.path.dirname(__file__), "rm2025map.png")).resize((1400, 750))
         self.map_image = cv2.cvtColor(np.array(pil_map_image), cv2.COLOR_RGB2BGR)
+        self.print_info = print_info
+        self.visualize = visualize
+        self.real_serial = real_serial
 
-    def write(self, packet, print_info=False):
+    def write(self, packet):
+        if self.real_serial:
+            self.real_serial.write(packet)
         frame_header = packet[0:5]
         SOF = struct.unpack_from("B", frame_header[0:1])[0]
         data_length = struct.unpack_from("<H", frame_header[1:3])[0]
@@ -93,7 +100,7 @@ class FakeSerial_Radar:
         cmd_id = struct.unpack_from("<H", packet[5:7])[0]
         data = packet[7:7+data_length]
         frame_tail = struct.unpack_from("<H", packet[7+data_length:9+data_length])[0]
-        if print_info:
+        if self.print_info:
             print(packet)
             if SOF == 0xA5:
                 print("SOF Pass")
@@ -117,7 +124,9 @@ class FakeSerial_Radar:
             else:
                 print("frame_tail Error")
         map_robot_data_py = map_robot_data_t_py(data)
-        map_robot_data_py.print_infos(visualize = True, map_image = self.map_image.copy())
+        map_robot_data_py.print_infos(print_info = self.print_info, visualize = self.visualize, map_image = self.map_image.copy(), real_serial = self.real_serial)
     
     def read_all(self):
+        if self.real_serial:
+            return self.real_serial.read_all()
         return b''

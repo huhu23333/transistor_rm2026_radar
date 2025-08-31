@@ -2,6 +2,8 @@ import threading
 import time
 from collections import deque
 import serial
+import cv2
+import numpy as np
 
 import sys, os
 sys.path.append(os.path.dirname(__file__))
@@ -12,7 +14,7 @@ from RM_serial_py.ser_api import  build_send_packet, receive_packet, Radar_decis
 from FakeSerial import FakeSerial_Radar
 
 class Communicator:
-    def __init__(self, state = 'B', debug = False):
+    def __init__(self, state = 'B', visualize_map = True, visualize_information = True, allow_no_serial = False):
         self.state = state  # R:红方/B:蓝方
         # 初始化战场信息UI（标记进度、双倍易伤次数、双倍易伤触发状态）
         self.double_vulnerability_chance = -1  # 双倍易伤机会数
@@ -83,12 +85,21 @@ class Communicator:
             "B7": [(2240, 870), (2240, 603)],
             # "B7": [(0, 0), (22.4, 6.3)]
         }
-        if not debug:
-            self.ser1 = serial.Serial('COM1', 115200, timeout=1)  # 串口，替换 'COM1' 为你的串口号
-        else:
-            self.ser1 = FakeSerial_Radar()
+
+        try:
+            real_serial = serial.Serial('COM5', 115200, timeout=1)  # 串口，替换 'COM1' 为你的串口号
+        except serial.serialutil.SerialException as e:
+            e_serial = e
+            real_serial = None
+        if not allow_no_serial:
+            if not real_serial:
+                raise Exception(e_serial)
+        self.ser1 = FakeSerial_Radar(print_info = False, visualize = visualize_map, real_serial = real_serial)
         self.filter = Filter(window_size=3, communicator=self, max_inactive_time=2)
         self.start_serial()
+        if visualize_information:
+            self.information_ui = InformationUI()
+            self.start_draw_information_ui()
 
     def start_serial(self):
         # 串口接收线程
@@ -97,6 +108,15 @@ class Communicator:
         # 串口发送线程
         thread_list = threading.Thread(target=self.ser_send, daemon=True)
         thread_list.start()
+
+    def start_draw_information_ui(self):
+        thread_draw = threading.Thread(target=self.draw_information_ui_thread, daemon=True)
+        thread_draw.start()
+
+    def draw_information_ui_thread(self):
+        while True:
+            self.information_ui.draw(self.state, self.progress_list, self.double_vulnerability_chance, self.opponent_double_vulnerability)
+            time.sleep(0.05)
 
     # 串口发送线程
     def ser_send(self):
@@ -427,6 +447,78 @@ class Filter:
                 filtered_d[name] = self.filter_data(name)
         # 返回所有当前识别到的机器人及其坐标的均值
         return filtered_d
+
+class InformationUI:
+    def __init__(self):
+        self.index_table = {
+            1: "R1",
+            2: "R2",
+            3: "R3",
+            4: "R4",
+            5: "R5",
+            6: "R7",
+            101: "B1",
+            102: "B2",
+            103: "B3",
+            104: "B4",
+            105: "B5",
+            106: "B7"
+        }
+    def draw(self, state, progress_list, double_vulnerability_chance, opponent_double_vulnerability):
+        # 绘制UI
+        information_ui_show = np.zeros((500, 420, 3), dtype=np.uint8)
+        _ = self.__draw_information_ui(progress_list, state, information_ui_show)
+        cv2.putText(information_ui_show, "vulnerability_chances: " + str(double_vulnerability_chance),
+                    (10, 350),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.putText(information_ui_show, "vulnerability_Triggering: " + str(opponent_double_vulnerability),
+                    (10, 400),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.imshow('information_ui', information_ui_show)
+        cv2.waitKey(1)
+    # 绘制裁判系统数据的UI
+    def __draw_information_ui(self, bar_list, camp, image):
+        cv2.line(image, (300, 0), (300, 300), (0, 150, 0), 2)
+        height_light = [0, 0, 0, 0, 0, 0]
+        # 计算每条线段的长度
+        num_lines = len(bar_list)
+        max_value = 120
+        threshold = 100  # 临界值
+        max_length = 300  # 最大长度
+        segment_height = int(300 / num_lines)
+        # 绘制线段和索引
+        for i, value in enumerate(bar_list):
+            # 计算线段长度
+            if value > threshold:
+                line_length = int((value / max_value) * max_length)
+                line_height = 8
+                height_light[i] = 1
+                if camp == 'R':
+                    color = (255, 0, 0)  # 超过临界值的线段高光处理为绿色
+                else:
+                    color = (0, 0, 255)
+            else:
+                line_height = 3
+                if camp == 'R':
+                    color = (200, 0, 0)  # 超过临界值的线段高光处理为绿色
+                else:
+                    color = (0, 0, 200)
+                line_length = int((value / max_value) * max_length)
+            # 绘制线段
+            start_point = (50, i * segment_height + segment_height // 2)
+            end_point = (50 + line_length, i * segment_height + segment_height // 2)
+            cv2.line(image, start_point, end_point, color, line_height, lineType=cv2.LINE_AA)
+            # 绘制索引
+            if camp == 'R':
+                index = i + 101
+            else:
+                index = i + 1
+            cv2.putText(image, str(self.index_table.get(index)), (10, start_point[1] + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(image, str(value), (370, start_point[1] + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
+                        cv2.LINE_AA)
+        # 在值为100的位置处画一条垂直线
+        return height_light
 
 
 
