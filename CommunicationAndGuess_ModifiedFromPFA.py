@@ -96,7 +96,7 @@ class Communicator:
         if not allow_no_serial:
             if not real_serial:
                 raise Exception(e_serial)
-        self.ser1 = FakeSerial_Radar(print_info = False, visualize = visualize_map, real_serial = real_serial)
+        self.ser1 = FakeSerial_Radar(print_info_TX = False, print_info_RX = True, visualize = visualize_map, real_serial = real_serial)
         self.filter = Filter(window_size=3, communicator=self, max_inactive_time=2)
         self.start_serial()
         if visualize_information:
