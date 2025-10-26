@@ -31,7 +31,7 @@ class LivoxInterface:
         self.integrateResult = np.zeros((0, 5))
         self.integrateResult_rad = np.zeros((0, 5))
         current_path = os.path.dirname(__file__)
-        self.lib = ctypes.CDLL(os.path.join(current_path, "livox_python_interface.dll"))
+        self.lib = ctypes.CDLL(os.path.join(current_path, "liblivox_python_interface.so"))
 
         self.lib.pyif_Init.argtypes = []  # 设置参数类型
         self.lib.pyif_Init.restype = ctypes.c_int  # 设置返回类型

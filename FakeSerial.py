@@ -2,6 +2,7 @@ import struct
 import numpy as np
 import cv2
 from PIL import Image
+import queue
 
 import sys, os
 sys.path.append(os.path.dirname(__file__))
@@ -9,7 +10,8 @@ sys.path.append(os.path.dirname(__file__))
 from CRC import Get_CRC8_Check_Sum, Get_CRC16_Check_Sum
 
 class map_robot_data_t_py:
-    def __init__(self, initData = None):
+    def __init__(self, initData, fakeSerialVisualize_frame_queue):
+        self.fakeSerialVisualize_frame_queue = fakeSerialVisualize_frame_queue
         self.hero_position_x = 0
         self.hero_position_y = 0
         self.engineer_position_x = 0
@@ -78,11 +80,14 @@ class map_robot_data_t_py:
                 cv2.circle(map_image, visualize_position, 5, (0,255,0), -1)
                 cv2.putText(map_image, f"Sentry({self.sentry_position_x},{self.sentry_position_y})", (visualize_position[0]+10, visualize_position[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,255,0))
             map_image = cv2.resize(map_image, (700, 375))
-            cv2.imshow(f"FakeSerialVisualize | real_serial : {real_serial.port if real_serial else "None"}", map_image)
-            cv2.waitKey(1) 
+            cv2.putText(map_image, f"real_serial : {real_serial.port if real_serial else 'None'}", (2,28), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0))
+            #cv2.imshow(f"FakeSerialVisualize | real_serial : {real_serial.port if real_serial else "None"}", map_image)
+            self.fakeSerialVisualize_frame_queue.put(map_image)
+            #cv2.waitKey(1) 
 
 class FakeSerial_Radar:
-    def __init__(self, print_info_TX = True, print_info_RX = True, visualize = True, real_serial = None):
+    def __init__(self, print_info_TX = True, print_info_RX = True, visualize = True, real_serial = None, fakeSerialVisualize_frame_queue=queue.Queue(maxsize=0)):
+        self.fakeSerialVisualize_frame_queue = fakeSerialVisualize_frame_queue
         pil_map_image = Image.open(os.path.join(os.path.dirname(__file__), "rm2025map.png")).resize((1400, 750))
         self.map_image = cv2.cvtColor(np.array(pil_map_image), cv2.COLOR_RGB2BGR)
         self.print_info_TX = print_info_TX
@@ -128,7 +133,7 @@ class FakeSerial_Radar:
             else:
                 info_to_print += ("TX frame_tail Error")
             print(info_to_print)
-        map_robot_data_py = map_robot_data_t_py(data)
+        map_robot_data_py = map_robot_data_t_py(data, self.fakeSerialVisualize_frame_queue)
         map_robot_data_py.print_infos(print_info = self.print_info_TX, visualize = self.visualize, map_image = self.map_image.copy(), real_serial = self.real_serial)
     
     def read_all(self):

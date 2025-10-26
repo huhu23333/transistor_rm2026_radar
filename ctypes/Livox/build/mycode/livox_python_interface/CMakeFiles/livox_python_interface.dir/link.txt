@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -pthread -shared -Wl,-soname,liblivox_python_interface.so -o liblivox_python_interface.so CMakeFiles/livox_python_interface.dir/main.c.o  ../../sdk_core/liblivox_sdk_static.a 

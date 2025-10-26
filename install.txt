@@ -1,0 +1,9 @@
+conda create -n yolov12_forRadar python=3.12
+conda activate yolov12_forRadar
+#wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.2/flash_attn-2.8.2+cu12torch2.5cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+git clone https://github.com/sunsmarterjie/yolov12.git
+pip install -e ./yolov12/
+cp ./ThirdPartyFix/model.py ./yolov12/ultralytics/engine/model.py
+pip install -r requirements.txt
+#pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+#pip install ./flash_attn-2.8.2+cu12torch2.5cxx11abiTRUE-cp312-cp312-linux_x86_64.whl

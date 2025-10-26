@@ -1,124 +1,115 @@
-about-time==4.2.1
-aiofiles==23.2.1
-albucore==0.0.23
-albumentations==2.0.4
-alive-progress==3.3.0
-annotated-types==0.7.0
-anyio==4.10.0
-attrs==25.3.0
-autograd==1.8.0
-certifi==2025.8.3
-charset-normalizer==3.4.3
-click==8.2.1
-cma==4.3.0
-colorama==0.4.6
-coloredlogs==15.0.1
-contourpy==1.3.1
-crcmod==1.7
-cycler==0.12.1
-Deprecated==1.2.18
-dill==0.4.0
-einops==0.8.1
-fastapi==0.116.1
-ffmpy==0.6.1
-filelock==3.19.1
-flash_attn @ file:///D:/Code/new/PythonProjects/rm2026/radar/flash_attn-2.7.4%2Bcu124torch2.5-cp312-cp312-win_amd64.whl#sha256=0c4f46374bdf3ae0833948256106e5c425d9bc54bad3fb341e66b986355df2ea
-flatbuffers==25.2.10
-fonttools==4.56.0
-fsspec==2025.7.0
-gradio==4.44.1
-gradio_client==1.3.0
-graphemeu==0.7.2
-h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
-huggingface-hub==0.23.2
-humanfriendly==10.0
-idna==3.10
-importlib_resources==6.5.2
-Jinja2==3.1.6
-joblib==1.5.1
-jsonschema==4.25.1
-jsonschema-specifications==2025.4.1
-kiwisolver==1.4.8
-laspy==2.6.1
-markdown-it-py==4.0.0
-MarkupSafe==2.1.5
-matplotlib==3.10.1
-mdurl==0.1.2
-mpmath==1.3.0
-natsort==8.4.0
-networkx==3.4.2
-ninja==1.11.1.4
-nncf==2.17.0
-numpy==1.26.4
+# about-time==4.2.1
+# aiofiles==23.2.1
+# albucore==0.0.23
+# albumentations==2.0.4
+# alive-progress==3.3.0
+# annotated-types==0.7.0
+# anyio==4.10.0
+# attrs==25.3.0
+# autograd==1.8.0
+# certifi==2025.8.3
+# charset-normalizer==3.4.3
+# click==8.2.1
+# cma==4.3.0
+# colorama==0.4.6
+# coloredlogs==15.0.1
+# contourpy==1.3.1
+# crcmod==1.7
+# cycler==0.12.1
+# Deprecated==1.2.18
+# dill==0.4.0
+# einops==0.8.1
+# fastapi==0.116.1
+# ffmpy==0.6.1
+# filelock==3.19.1
+# flatbuffers==25.2.10
+# fonttools==4.56.0
+# fsspec==2025.7.0
+# graphemeu==0.7.2
+# h11==0.16.0
+# httpcore==1.0.9
+# httpx==0.28.1
+# huggingface-hub==0.23.2
+# humanfriendly==10.0
+# idna==3.10
+# importlib_resources==6.5.2
+# Jinja2==3.1.6
+# joblib==1.5.1
+# jsonschema==4.25.1
+# jsonschema-specifications==2025.4.1
+# kiwisolver==1.4.8
+# laspy==2.6.1
+# markdown-it-py==4.0.0
+# MarkupSafe==2.1.5
+# matplotlib==3.10.1
+# mdurl==0.1.2
+# mpmath==1.3.0
+# natsort==8.4.0
+# networkx==3.4.2
+# ninja==1.11.1.4
+# nncf==2.17.0
+# numpy==1.26.4
 onnx==1.18.0
 onnxruntime==1.22.1
 onnxruntime-gpu==1.22.0
 onnxslim==0.1.50
-opencv-python==4.9.0.80
+opencv-python==4.12.0.88
 opencv-python-headless==4.11.0.86
 openvino==2025.2.0
 openvino-telemetry==2025.2.0
-orjson==3.11.2
-packaging==24.2
-pandas==2.2.3
-pillow==10.4.0
-protobuf==6.32.0
-psutil==5.9.8
-py-cpuinfo==9.0.0
-pycocotools==2.0.7
-pydantic==2.11.7
-pydantic_core==2.33.2
-pydot==3.0.4
-pydub==0.25.1
-Pygments==2.19.2
-pymoo==0.6.1.5
-pyparsing==3.2.1
-PyQt5==5.15.11
-PyQt5-Qt5==5.15.2
-PyQt5_sip==12.17.0
-pyreadline3==3.5.4
+# orjson==3.11.2
+# packaging==24.2
+# pandas==2.2.3
+# pillow==10.4.0
+# protobuf==6.32.0
+# psutil==5.9.8
+# py-cpuinfo==9.0.0
+# pycocotools==2.0.7
+# pydantic==2.11.7
+# pydantic_core==2.33.2
+# pydot==3.0.4
+# pydub==0.25.1
+# Pygments==2.19.2
+# pymoo==0.6.1.5
+# pyparsing==3.2.1
+# PyQt5==5.15.11
+# PyQt5-Qt5==5.15.2
+# PyQt5_sip==12.17.0
+# pyreadline3==3.5.4
 pyserial==3.5
-python-dateutil==2.9.0.post0
-python-multipart==0.0.20
-pytz==2025.1
-PyYAML==6.0.1
-referencing==0.36.2
-requests==2.32.5
-rich==14.1.0
-rpds-py==0.27.0
-ruff==0.12.10
-safetensors==0.4.3
-scikit-learn==1.7.1
-scipy==1.13.0
-seaborn==0.13.2
-semantic-version==2.10.0
-setuptools==78.1.1
-shellingham==1.5.4
-simsimd==6.5.1
-six==1.17.0
-sniffio==1.3.1
-starlette==0.47.3
-stringzilla==3.12.6
-sympy==1.13.1
-tabulate==0.9.0
-threadpoolctl==3.6.0
-timm==1.0.14
-tomlkit==0.12.0
-torch==2.5.1+cpu
-torchaudio==2.5.1+cpu
-torchvision==0.20.1+cpu
-tqdm==4.67.1
-typer==0.16.1
-typing-inspection==0.4.1
-typing_extensions==4.15.0
-tzdata==2025.1
-# Editable install with no version control (ultralytics==8.3.63)
--e d:\ai\yolov12\yolov12-main
-ultralytics-thop==2.0.16
-urllib3==2.5.0
-uvicorn==0.35.0
-websockets==12.0
-wheel==0.45.1
-wrapt==1.17.3
+# python-dateutil==2.9.0.post0
+# python-multipart==0.0.20
+# pytz==2025.1
+# PyYAML==6.0.1
+# referencing==0.36.2
+# requests==2.32.5
+# rich==14.1.0
+# rpds-py==0.27.0
+# ruff==0.12.10
+# safetensors==0.4.3
+# scikit-learn==1.7.1
+# scipy==1.13.0
+# seaborn==0.13.2
+# semantic-version==2.10.0
+# setuptools==78.1.1
+# shellingham==1.5.4
+# simsimd==6.5.1
+# six==1.17.0
+# sniffio==1.3.1
+# starlette==0.47.3
+# stringzilla==3.12.6
+# sympy==1.13.1
+# tabulate==0.9.0
+# threadpoolctl==3.6.0
+# timm==1.0.14
+# tomlkit==0.12.0
+# tqdm==4.67.1
+# typer==0.16.1
+# typing-inspection==0.4.1
+# typing_extensions==4.15.0
+# tzdata==2025.1
+# urllib3==2.5.0
+# uvicorn==0.35.0
+# websockets==12.0
+# wheel==0.45.1
+# wrapt==1.17.3

@@ -2,3 +2,5 @@ runs/
 flash_attn-2.7.4+cu124torch2.5-cp312-cp312-win_amd64.whl
 .vscode/
 __pycache__/
+flash_attn-2.8.2+cu12torch2.5cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+yolov12/

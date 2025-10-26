@@ -4,6 +4,7 @@ from collections import deque
 import serial
 import cv2
 import numpy as np
+import queue
 
 import sys, os
 sys.path.append(os.path.dirname(__file__))
@@ -15,7 +16,9 @@ from FakeSerial import FakeSerial_Radar
 from SemiAutoSerialPort import semi_auto_serial_port
 
 class Communicator:
-    def __init__(self, state = 'B', visualize_map = True, visualize_information = True, allow_no_serial = False):
+    def __init__(self, state = 'B', visualize_map = True, visualize_information = True, allow_no_serial = False, information_ui_frame_queue=queue.Queue(maxsize=0), fakeSerialVisualize_frame_queue=queue.Queue(maxsize=0)):
+        self.information_ui_frame_queue = information_ui_frame_queue
+        self.fakeSerialVisualize_frame_queue = fakeSerialVisualize_frame_queue
         self.state = state  # R:红方/B:蓝方
         # 初始化战场信息UI（标记进度、双倍易伤次数、双倍易伤触发状态）
         self.double_vulnerability_chance = -1  # 双倍易伤机会数
@@ -87,20 +90,21 @@ class Communicator:
             # "B7": [(0, 0), (22.4, 6.3)]
         }
 
-        serial_port = semi_auto_serial_port(default_port = "COM5") # 串口，替换 'COM5' 为你的串口号（也可以不换()）
+        serial_port = "/dev/"+semi_auto_serial_port(default_port = "ttyUSB0") # 串口，替换 'COM5' 为你的串口号（也可以不换()）
         try:
             real_serial = serial.Serial(serial_port, 115200, timeout=1)
         except serial.serialutil.SerialException as e:
+            print(e)
             e_serial = e
             real_serial = None
         if not allow_no_serial:
             if not real_serial:
                 raise Exception(e_serial)
-        self.ser1 = FakeSerial_Radar(print_info_TX = False, print_info_RX = True, visualize = visualize_map, real_serial = real_serial)
+        self.ser1 = FakeSerial_Radar(print_info_TX = False, print_info_RX = True, visualize = visualize_map, real_serial = real_serial, fakeSerialVisualize_frame_queue=self.fakeSerialVisualize_frame_queue)
         self.filter = Filter(window_size=3, communicator=self, max_inactive_time=2)
         self.start_serial()
         if visualize_information:
-            self.information_ui = InformationUI()
+            self.information_ui = InformationUI(self.information_ui_frame_queue)
             self.start_draw_information_ui()
 
     def start_serial(self):
@@ -451,7 +455,8 @@ class Filter:
         return filtered_d
 
 class InformationUI:
-    def __init__(self):
+    def __init__(self, information_ui_frame_queue):
+        self.information_ui_frame_queue = information_ui_frame_queue
         self.index_table = {
             1: "R1",
             2: "R2",
@@ -476,8 +481,9 @@ class InformationUI:
         cv2.putText(information_ui_show, "vulnerability_Triggering: " + str(opponent_double_vulnerability),
                     (10, 400),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-        cv2.imshow('information_ui', information_ui_show)
-        cv2.waitKey(1)
+        self.information_ui_frame_queue.put(information_ui_show)
+        #cv2.imshow('information_ui', information_ui_show)
+        #cv2.waitKey(1)
     # 绘制裁判系统数据的UI
     def __draw_information_ui(self, bar_list, camp, image):
         cv2.line(image, (300, 0), (300, 300), (0, 150, 0), 2)

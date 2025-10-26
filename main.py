@@ -9,6 +9,7 @@ from ultralytics import YOLO
 from PIL import Image
 from YOLOResultsFilter import remove_overlapping_boxes
 from CommunicationAndGuess_ModifiedFromPFA import Communicator
+import queue
 
 team_color = "RED"
 
@@ -29,6 +30,10 @@ yolo_cls_to_communicator_cls = {
 }
 
 def main():
+    information_ui_frame_queue = queue.Queue(maxsize=1)
+    fakeSerialVisualize_frame_queue = queue.Queue(maxsize=1)
+
+
     livoxInterface = LivoxInterface()
     livoxInterface.pyif_Init()
     #livoxInterface.test()
@@ -54,7 +59,7 @@ def main():
     armor_model = YOLO(armor_model_path)
     #armor_model.export(format="openvino",int8=True)
 
-    communicator = Communicator(state=("R" if team_color == "RED" else "B"), visualize_map=True, visualize_information=True, allow_no_serial=True)
+    communicator = Communicator(state=("R" if team_color == "RED" else "B"), visualize_map=True, visualize_information=True, allow_no_serial=True, information_ui_frame_queue=information_ui_frame_queue, fakeSerialVisualize_frame_queue=fakeSerialVisualize_frame_queue)
     communicator.start_serial()
 
     coordinateConverter = CoordinateConverter(team_color = team_color, debugFlags = {"debugPosition": False, "debugFunction": True})
@@ -109,6 +114,10 @@ def main():
             #cv2.imshow("Camera", annotated_img)
             img_mapToRad = cv2.resize(img_mapToRad, (800, 800))
             cv2.imshow("Camera mapToRad", img_mapToRad)
+            if not information_ui_frame_queue.empty():
+                cv2.imshow('information_ui', information_ui_frame_queue.get(block=False))
+            if not fakeSerialVisualize_frame_queue.empty():
+                cv2.imshow('FakeSerialVisualize', fakeSerialVisualize_frame_queue.get(block=False))
 
         cv2.waitKey(1)
         """ if cv2.waitKey(1) & 0xFF == 27:  # 按下 ESC 键退出

@@ -33,27 +33,17 @@
 #include "livox_sdk.h"
 #include <math.h>
 
+#include "livox_interface.h"
 
+// 导出变量的实际定义
+EXPORT_API PYIF_PonitData pyif_ponitDataArray[2][PYIF_PonitDataArrayLen];
+EXPORT_API bool pyif_usedFlag_0 = false;
+EXPORT_API bool pyif_usedFlag_1 = false;
+EXPORT_API uint64_t pyif_writeCount = 0;
 
-__declspec(dllexport) int pyif_Init();
-__declspec(dllexport) void pyif_Uninit();
-__declspec(dllexport) void pyif_draw2dImageF(double* yaws, double* pitchs, double* values, uint64_t point_number, uint16_t imageSize, uint16_t values_number, double* result, uint8_t* mask);
-#define PYIF_PonitDataArrayLen 4096
-typedef struct {
-  int32_t x;            /**< X axis, Unit:mm */
-  int32_t y;            /**< Y axis, Unit:mm */
-  int32_t z;            /**< Z axis, Unit:mm */
-  uint8_t reflectivity; /**< Reflectivity */
-  uint8_t tag;          /**< Tag */
-} PYIF_PonitData;
-__declspec(dllexport) PYIF_PonitData pyif_ponitDataArray[2][PYIF_PonitDataArrayLen];
-__declspec(dllexport) bool pyif_usedFlag_0 = true;
-__declspec(dllexport) bool pyif_usedFlag_1 = true;
+// 内部使用的变量（不需要导出）
 uint8_t pyif_writeTo = 0;
 uint32_t pyif_writeIndex = 0;
-__declspec(dllexport) uint64_t pyif_writeCount = 0;
-
-
 
 typedef enum {
   kDeviceStateDisconnect = 0,

@@ -1,3 +1,7 @@
 {
-    "cmake.sourceDirectory": "D:/Code/new/PythonProjects/rm2026/radar/ctypes/Livox"
+    "cmake.sourceDirectory": "D:/Code/new/PythonProjects/rm2026/radar/ctypes/Livox",
+    "files.associations": {
+        "livox_interface.h": "c",
+        "stdlib.h": "c"
+    }
 }
